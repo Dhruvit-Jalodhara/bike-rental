@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Dashboard - WheelsOnDemand</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .dashboard-header {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            align-items: stretch;
+        }
+        @media (max-width: 900px) {
+            .dashboard-header { grid-template-columns: 1fr; }
+        }
+        .profile-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .avatar-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1rem;
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+        .status-dot {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 18px;
+            height: 18px;
+            background: var(--success);
+            border: 3px solid #fff;
+            border-radius: 50%;
+        }
+        .profile-info {
+            text-align: left;
+            margin-top: 1.2rem;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+        .profile-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.6rem;
+        }
+        .profile-info-row span:first-child {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .profile-info-row span:last-child {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1.2rem;
+        }
+        .stat-card-clickable {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+        }
+        .stat-card-clickable:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
+        }
+        .stat-card-clickable.active-card {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        .stat-card-clickable .icon {
+            font-size: 2.2rem;
+            margin-bottom: 0.4rem;
+        }
+        .stat-card-clickable .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .stat-card-clickable .label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+        .stat-card-clickable .click-hint {
+            font-size: 0.72rem;
+            color: var(--primary);
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+        .table-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .filter-pills {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .filter-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 0.45rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .search-input {
+            padding: 0.55rem 1.1rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            min-width: 260px;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+        .action-select {
+            padding: 0.35rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">🏍️ WheelsOnDemand</a>
+        <div class="nav-links">
+            <a href="/bikes">Rent Bikes</a>
+            <a href="/rentals" style="color: var(--primary); font-weight: 700;">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Upper Profile & Interactive KPI Cards -->
+        <div class="dashboard-header">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <div class="avatar-container">
+                    <img 
+                        src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&h=200&q=80" 
+                        alt="Profile Photo" 
+                        class="profile-avatar"
+                    >
+                    <div class="status-dot" title="Account Active"></div>
+                </div>
+                <h3 style="margin-bottom: 0.2rem;">{{ customer.name }}</h3>
+                <span class="badge badge-success">Verified Rider</span>
+
+                <div class="profile-info">
+                    <div class="profile-info-row">
+                        <span>Email:</span>
+                        <span>{{ customer.email }}</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span>Phone:</span>
+                        <span>{{ customer.phone }}</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span>License No:</span>
+                        <span>{{ customer.license_no }}</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span>Customer ID:</span>
+                        <span>#CUST-{{ customer.customer_id }}</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span>Member Since:</span>
+                        <span>{{ customer.created_at.strftime('%b %Y') if customer.created_at else 'Recent' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clickable Cards -->
+            <div class="stats-grid">
+                <!-- Card 1: Click for All Trips / History -->
+                <div class="stat-card-clickable" id="cardTotalTrips" onclick="triggerCardFilter('all', 'cardTotalTrips')" title="Click to view complete rental history">
+                    <div class="icon">🚴‍♂️</div>
+                    <div class="number">{{ stats.total_trips }}</div>
+                    <div class="label">Total Trips Taken</div>
+                    <span class="click-hint">👇 View All History</span>
+                </div>
+
+                <!-- Card 2: Click for Active Rentals & Return Option -->
+                <div class="stat-card-clickable" id="cardActiveRentals" onclick="triggerCardFilter('Active', 'cardActiveRentals')" title="Click to manage and return active bikes">
+                    <div class="icon">⏱️</div>
+                    {% if stats.active_count > 0 %}
+                    <div class="number" style="color: var(--warning);">{{ stats.active_count }}</div>
+                    {% else %}
+                    <div class="number">{{ stats.active_count }}</div>
+                    {% endif %}
+                    <div class="label">Active Rentals</div>
+                    <span class="click-hint" style="color: var(--warning);">⚡ Return Rented Bikes</span>
+                </div>
+
+                <!-- Card 3: Click for Completed Payments / Total Spent -->
+                <div class="stat-card-clickable" id="cardTotalSpent" onclick="triggerCardFilter('Completed', 'cardTotalSpent')" title="Click to view payment invoices">
+                    <div class="icon">💳</div>
+                    <div class="number" style="color: var(--primary);">₹{{ "%.2f"|format(stats.total_spent) }}</div>
+                    <div class="label">Total Spent</div>
+                    <span class="click-hint">🧾 View Paid Invoices</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rental History Section -->
+        <div class="card" id="historySection">
+            <div class="table-filter-bar">
+                <h3 id="sectionTitle">All Rental Records</h3>
+                <div class="filter-pills">
+                    <button class="filter-btn active" id="btn-all" onclick="filterByStatus('all', this)">All</button>
+                    <button class="filter-btn" id="btn-Active" onclick="filterByStatus('Active', this)">Active (Return)</button>
+                    <button class="filter-btn" id="btn-Completed" onclick="filterByStatus('Completed', this)">Completed</button>
+                </div>
+                <input 
+                    type="text" 
+                    id="historySearch" 
+                    class="search-input" 
+                    placeholder="Search bike, date, or ID..." 
+                    onkeyup="searchTable()"
+                >
+            </div>
+
+            <div class="table-responsive">
+                <table id="rentalTable">
+                    <thead>
+                        <tr>
+                            <th>Rental ID</th>
+                            <th>Bike Details</th>
+                            <th>Category</th>
+                            <th>Rental Started</th>
+                            <th>Return Time</th>
+                            <th>Status</th>
+                            <th>Total Bill</th>
+                            <th>Payment</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rentalTableBody">
+                        {% for r in rentals %}
+                        <tr class="rental-row" data-status="{{ r.rental_status }}">
+                            <td><strong>#{{ r.rental_id }}</strong></td>
+                            <td>
+                                <strong>{{ r.brand }} {{ r.model }}</strong><br>
+                                <small style="color: var(--text-muted);">{{ r.registration_no }}</small>
+                            </td>
+                            <td><span class="badge" style="background:#f1f5f9; color:#475569;">{{ r.bike_type }}</span></td>
+                            <td>{{ r.start_time.strftime('%d %b %Y, %I:%M %p') }}</td>
+                            <td>
+                                {% if r.end_time %}
+                                    {{ r.end_time.strftime('%d %b %Y, %I:%M %p') }}
+                                {% else %}
+                                    <span style="color: var(--warning); font-weight: 600;">In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.rental_status == 'Active' %}
+                                    <span class="badge badge-warning">Active</span>
+                                {% else %}
+                                    <span class="badge badge-success">Completed</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>₹{{ "%.2f"|format(r.total_amount) }}</strong></td>
+                            <td>
+                                {% if r.payment_status == 'Paid' %}
+                                    <span style="color: var(--success); font-weight: 600;">✓ {{ r.payment_method }}</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.rental_status == 'Active' %}
+                                <form action="/return/{{ r.rental_id }}" method="POST" style="display:flex; gap:0.4rem; align-items:center;">
+                                    <select name="payment_method" class="action-select">
+                                        <option value="UPI">UPI</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; border-radius: 6px;">
+                                        Return Bike
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button type="button" class="btn" style="border: 1px solid var(--border); padding: 0.35rem 0.7rem; font-size: 0.8rem;" onclick="window.print()">Receipt</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                                🚴 You have not rented any bikes yet. <a href="/bikes" style="color: var(--primary); font-weight: 600;">Explore available fleet</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side Interactive Filter & Smooth Scroll Scripts -->
+    <script>
+        let currentStatusFilter = 'all';
+
+        function triggerCardFilter(status, cardId) {
+            document.querySelectorAll('.stat-card-clickable').forEach(c => c.classList.remove('active-card'));
+            if (cardId) {
+                document.getElementById(cardId).classList.add('active-card');
+            }
+
+            const targetBtn = document.getElementById('btn-' + status);
+            filterByStatus(status, targetBtn);
+
+            document.getElementById('historySection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function filterByStatus(status, button) {
+            currentStatusFilter = status;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (button) {
+                button.classList.add('active');
+            }
+
+            const titleEl = document.getElementById('sectionTitle');
+            if (status === 'Active') {
+                titleEl.innerText = "Active Rentals (Return Vehicles Below)";
+            } else if (status === 'Completed') {
+                titleEl.innerText = "Completed Rentals & Invoices";
+            } else {
+                titleEl.innerText = "All Rental Records";
+            }
+
+            applyFilters();
+        }
+
+        function searchTable() {
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('historySearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.rental-row');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const status = row.getAttribute('data-status');
+
+                const matchesQuery = text.includes(query);
+                const matchesStatus = (currentStatusFilter === 'all') || (status === currentStatusFilter);
+
+                if (matchesQuery && matchesStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

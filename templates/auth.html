@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authentication - WheelsOnDemand</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .auth-wrapper {
+            max-width: 480px;
+            margin: 2rem auto;
+        }
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            background: none;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .form-section {
+            display: none;
+        }
+        .form-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">🏍️ WheelsOnDemand</a>
+        <div class="nav-links"><a href="/">Home</a></div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="auth-wrapper">
+            <div class="card">
+                <!-- Toggle Tabs -->
+                <div class="tab-header">
+                    <button type="button" class="tab-btn active" id="loginTabBtn" onclick="switchTab('login')">Login</button>
+                    <button type="button" class="tab-btn" id="registerTabBtn" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <!-- Login Section -->
+                <div id="loginSection" class="form-section active">
+                    <form action="/login" method="POST">
+                        <div class="form-group">
+                            <label>Login As</label>
+                            <select name="role">
+                                <option value="customer">Customer</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" placeholder="name@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Sign In</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                        Don't have an account? <a href="javascript:void(0)" onclick="switchTab('register')" style="color: var(--primary); font-weight: 600;">Register here</a>
+                    </p>
+                </div>
+
+                <!-- Register Section -->
+                <div id="registerSection" class="form-section">
+                    <form action="/register" method="POST">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="name" placeholder="John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" placeholder="name@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" name="phone" placeholder="9876543210" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Driving License No.</label>
+                            <input type="text" name="license_no" placeholder="GJ0520210001234" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; background: var(--success);">Create Account</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                        Already have an account? <a href="javascript:void(0)" onclick="switchTab('login')" style="color: var(--primary); font-weight: 600;">Sign in here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const loginSection = document.getElementById('loginSection');
+            const registerSection = document.getElementById('registerSection');
+            const loginBtn = document.getElementById('loginTabBtn');
+            const registerBtn = document.getElementById('registerTabBtn');
+
+            if (tab === 'register') {
+                loginSection.classList.remove('active');
+                registerSection.classList.add('active');
+                loginBtn.classList.remove('active');
+                registerBtn.classList.add('active');
+            } else {
+                registerSection.classList.remove('active');
+                loginSection.classList.add('active');
+                registerBtn.classList.remove('active');
+                loginBtn.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

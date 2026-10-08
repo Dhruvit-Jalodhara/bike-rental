@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Available Bikes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">🏍️ WheelsOnDemand</a>
+        <div class="nav-links">
+            <a href="/rentals">My Rentals</a>
+            <a href="/logout">Logout ({{ session.customer_name }})</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2 style="margin-bottom: 1.5rem;">Available Bikes for Rent</h2>
+
+        {% if bikes %}
+        <div class="grid">
+            {% for bike in bikes %}
+            <div class="card">
+                <h3>{{ bike.brand }} {{ bike.model }}</h3>
+                <p style="color: var(--text-muted); margin: 0.3rem 0;">Type: <strong>{{ bike.type }}</strong></p>
+                <p style="color: var(--text-muted); margin-bottom: 0.8rem;">Reg No: {{ bike.registration_no }}</p>
+                <h4 style="color: var(--primary); margin-bottom: 1rem;">₹{{ "%.2f"|format(bike.price_per_hour) }} / hr</h4>
+                <form action="/rent/{{ bike.bike_id }}" method="POST">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Rent Now</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <h3>No bikes currently available.</h3>
+            <p style="color: var(--text-muted);">Please check back later as other customers return vehicles.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

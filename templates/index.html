@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bike Rental System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">🏍️ WheelsOnDemand</a>
+        <div class="nav-links">
+            <a href="/bikes">Available Bikes</a>
+            {% if session.get('customer_id') %}
+                <a href="/rentals">My Rentals</a>
+                <a href="/logout">Logout ({{ session.customer_name }})</a>
+            {% elif session.get('admin_id') %}
+                <a href="/admin">Dashboard</a>
+                <a href="/logout">Logout (Admin)</a>
+            {% else %}
+                <a href="/login">Login / Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="hero">
+            <h1>Single-City Bike Rental Service</h1>
+            <p>Fast, reliable, and affordable two-wheeler rentals at your fingertips.</p>
+            <div>
+                <a href="/bikes" class="btn btn-primary">Browse Bikes</a>
+                {% if not session.get('customer_id') and not session.get('admin_id') %}
+                    <a href="/login" class="btn" style="border: 1px solid var(--border); margin-left: 0.5rem;">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
